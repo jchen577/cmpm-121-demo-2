@@ -20,6 +20,19 @@ ctx.fillRect(10, 10, 256, 256);
 let x = 0;
 let y = 0;
 let isDrawing: boolean = false;
+let points: number[][] = [];
+const undoPoints = [];
+const drawChangeEvent = new Event("drawChange");
+canvas?.addEventListener(
+  "drawChange",
+  () => {
+    ctx.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < points.length; i++) {
+      drawLine(ctx, points[i][0], points[i][1], points[i][2], points[i][3]);
+    }
+  },
+  false
+);
 canvas?.addEventListener("mousedown", (pos: MouseEvent) => {
   x = pos.offsetX;
   y = pos.offsetY;
@@ -28,7 +41,9 @@ canvas?.addEventListener("mousedown", (pos: MouseEvent) => {
 
 canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
   if (isDrawing) {
-    drawLine(ctx, x, y, pos.offsetX, pos.offsetY);
+    //drawLine(ctx, x, y, pos.offsetX, pos.offsetY);
+    points.push([x, y, pos.offsetX, pos.offsetY]);
+    canvas.dispatchEvent(drawChangeEvent);
     x = pos.offsetX;
     y = pos.offsetY;
   }
@@ -36,7 +51,9 @@ canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
 
 canvas?.addEventListener("mouseup", (pos: MouseEvent) => {
   if (isDrawing) {
-    drawLine(ctx, x, y, pos.offsetX, pos.offsetY);
+    //drawLine(ctx, x, y, pos.offsetX, pos.offsetY);
+    points.push([x, y, pos.offsetX, pos.offsetY]);
+    canvas.dispatchEvent(drawChangeEvent);
     x = 0;
     y = 0;
     isDrawing = false;
@@ -68,4 +85,5 @@ function drawLine(
 }
 function clearCanvas(context: CanvasRenderingContext2D) {
   context.fillRect(0, 0, 256, 256);
+  points = [];
 }
