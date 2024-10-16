@@ -20,16 +20,30 @@ ctx.fillRect(10, 10, 256, 256);
 let x = 0;
 let y = 0;
 let isDrawing: boolean = false;
-let points: number[][] = [];
+let points: number[][][] = [];
+let holder: number[][] = [];
 let undoPoints: number[][][] = [];
-let tracker = 0;
 const drawChangeEvent = new Event("drawChange");
 canvas?.addEventListener(
   "drawChange",
   () => {
-    ctx.fillRect(0, 0, 256, 256);
-    for (let i = 0; i < points.length; i++) {
-      drawLine(ctx, points[i][0], points[i][1], points[i][2], points[i][3]);
+    if (!isDrawing) {
+      ctx.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < points.length; i++) {
+        for (let j = 0; j < points[i].length; j++) {
+          drawLine(
+            ctx,
+            points[i][j][0],
+            points[i][j][1],
+            points[i][j][2],
+            points[i][j][3]
+          );
+        }
+      }
+    } else {
+      for (let i = 0; i < holder.length; i++) {
+        drawLine(ctx, holder[i][0], holder[i][1], holder[i][2], holder[i][3]);
+      }
     }
   },
   false
@@ -43,8 +57,8 @@ canvas?.addEventListener("mousedown", (pos: MouseEvent) => {
 canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
   if (isDrawing) {
     //drawLine(ctx, x, y, pos.offsetX, pos.offsetY);
-    points.push([x, y, pos.offsetX, pos.offsetY, 0]);
-    tracker++;
+    //points.push([x, y, pos.offsetX, pos.offsetY, 0]);
+    holder.push([x, y, pos.offsetX, pos.offsetY]);
     canvas.dispatchEvent(drawChangeEvent);
     x = pos.offsetX;
     y = pos.offsetY;
@@ -54,11 +68,14 @@ canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
 canvas?.addEventListener("mouseup", (pos: MouseEvent) => {
   if (isDrawing) {
     //drawLine(ctx, x, y, pos.offsetX, pos.offsetY);
-    points.push([x, y, pos.offsetX, pos.offsetY, tracker]);
+    holder.push([x, y, pos.offsetX, pos.offsetY]);
+    points.push(holder);
+    //points.push([x, y, pos.offsetX, pos.offsetY, tracker]);
+    isDrawing = false;
     canvas.dispatchEvent(drawChangeEvent);
     x = 0;
     y = 0;
-    isDrawing = false;
+    holder = [];
   }
 });
 
@@ -100,24 +117,18 @@ function drawLine(
 function clearCanvas(context: CanvasRenderingContext2D) {
   context.fillRect(0, 0, 256, 256);
   points = [];
+  undoPoints = [];
 }
 function undo() {
-  const holder: number[][] = [];
-  let popped = 0;
-  holder.push(points.pop());
-  while (popped == 0 && points.length > 0) {
-    const popd = points.pop();
-    holder.push(popd);
-    popped = popd[4];
+  if (points.length > 0) {
+    undoPoints.push(points.pop());
+    canvas?.dispatchEvent(drawChangeEvent);
   }
-  undoPoints.push(holder);
-  canvas?.dispatchEvent(drawChangeEvent);
 }
 
 function redo() {
-  const latest: number[] = undoPoints.pop();
-  for (let i = latest.length - 1; i >= 0; i--) {
-    points.push(latest[i]);
+  if (undoPoints.length > 0) {
+    points.push(undoPoints.pop());
+    canvas?.dispatchEvent(drawChangeEvent);
   }
-  canvas?.dispatchEvent(drawChangeEvent);
 }
