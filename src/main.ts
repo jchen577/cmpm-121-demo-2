@@ -21,7 +21,8 @@ let x = 0;
 let y = 0;
 let isDrawing: boolean = false;
 let points: number[][] = [];
-const undoPoints = [];
+let undoPoints: number[][][] = [];
+let tracker = 0;
 const drawChangeEvent = new Event("drawChange");
 canvas?.addEventListener(
   "drawChange",
@@ -42,7 +43,8 @@ canvas?.addEventListener("mousedown", (pos: MouseEvent) => {
 canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
   if (isDrawing) {
     //drawLine(ctx, x, y, pos.offsetX, pos.offsetY);
-    points.push([x, y, pos.offsetX, pos.offsetY]);
+    points.push([x, y, pos.offsetX, pos.offsetY, 0]);
+    tracker++;
     canvas.dispatchEvent(drawChangeEvent);
     x = pos.offsetX;
     y = pos.offsetY;
@@ -52,7 +54,7 @@ canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
 canvas?.addEventListener("mouseup", (pos: MouseEvent) => {
   if (isDrawing) {
     //drawLine(ctx, x, y, pos.offsetX, pos.offsetY);
-    points.push([x, y, pos.offsetX, pos.offsetY]);
+    points.push([x, y, pos.offsetX, pos.offsetY, tracker]);
     canvas.dispatchEvent(drawChangeEvent);
     x = 0;
     y = 0;
@@ -63,9 +65,21 @@ canvas?.addEventListener("mouseup", (pos: MouseEvent) => {
 const clear = document.createElement("button");
 clear.innerHTML = "clear";
 app.append(clear);
+const undoer = document.createElement("button");
+undoer.innerHTML = "undo";
+app.append(undoer);
+const redoer = document.createElement("button");
+redoer.innerHTML = "redo";
+app.append(redoer);
 
 clear.onclick = () => {
   clearCanvas(ctx);
+};
+undoer.onclick = () => {
+  undo();
+};
+redoer.onclick = () => {
+  redo();
 };
 
 function drawLine(
@@ -86,4 +100,24 @@ function drawLine(
 function clearCanvas(context: CanvasRenderingContext2D) {
   context.fillRect(0, 0, 256, 256);
   points = [];
+}
+function undo() {
+  const holder: number[][] = [];
+  let popped = 0;
+  holder.push(points.pop());
+  while (popped == 0 && points.length > 0) {
+    const popd = points.pop();
+    holder.push(popd);
+    popped = popd[4];
+  }
+  undoPoints.push(holder);
+  canvas?.dispatchEvent(drawChangeEvent);
+}
+
+function redo() {
+  const latest: number[] = undoPoints.pop();
+  for (let i = latest.length - 1; i >= 0; i--) {
+    points.push(latest[i]);
+  }
+  canvas?.dispatchEvent(drawChangeEvent);
 }
