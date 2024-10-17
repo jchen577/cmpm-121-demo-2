@@ -3,13 +3,13 @@ import "./style.css";
 interface displayable {
   display(context: CanvasRenderingContext2D): void;
 }
-
+let strokeWidth: number = 1;
 class markerLines {
   holder: number[][] = [];
   holder2: number[][][] = [];
   constructor() {}
-  drag(x: number, y: number, x2: number, y2: number): void {
-    this.holder.push([x, y, x2, y2]);
+  drag(x: number, y: number, x2: number, y2: number, lineWidth: number): void {
+    this.holder.push([x, y, x2, y2, lineWidth]);
   }
   display(context: CanvasRenderingContext2D) {
     if (!isDrawing) {
@@ -21,7 +21,8 @@ class markerLines {
             displayCommand.holder2[i][j][0],
             displayCommand.holder2[i][j][1],
             displayCommand.holder2[i][j][2],
-            displayCommand.holder2[i][j][3]
+            displayCommand.holder2[i][j][3],
+            displayCommand.holder2[i][j][4]
           );
         }
       }
@@ -33,7 +34,8 @@ class markerLines {
           cursorCommand.holder[k][0],
           cursorCommand.holder[k][1],
           cursorCommand.holder[k][2],
-          cursorCommand.holder[k][3]
+          cursorCommand.holder[k][3],
+          cursorCommand.holder[k][4]
         );
       }
       for (let i = 0; i < displayCommand.holder2.length; i++) {
@@ -43,7 +45,8 @@ class markerLines {
             displayCommand.holder2[i][j][0],
             displayCommand.holder2[i][j][1],
             displayCommand.holder2[i][j][2],
-            displayCommand.holder2[i][j][3]
+            displayCommand.holder2[i][j][3],
+            displayCommand.holder2[i][j][4]
           );
         }
       }
@@ -88,7 +91,7 @@ canvas?.addEventListener("mousedown", (pos: MouseEvent) => {
 canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
   if (isDrawing) {
     //holder.push([x, y, pos.offsetX, pos.offsetY]);
-    cursorCommand.drag(x, y, pos.offsetX, pos.offsetY);
+    cursorCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
     canvas.dispatchEvent(drawChangeEvent);
     x = pos.offsetX;
     y = pos.offsetY;
@@ -97,7 +100,7 @@ canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
 
 canvas?.addEventListener("mouseup", (pos: MouseEvent) => {
   if (isDrawing) {
-    cursorCommand.drag(x, y, pos.offsetX, pos.offsetY);
+    cursorCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
     displayCommand.holder2.push(cursorCommand.holder);
     isDrawing = false;
     canvas.dispatchEvent(drawChangeEvent);
@@ -116,6 +119,12 @@ app.append(undoer);
 const redoer = document.createElement("button");
 redoer.innerHTML = "redo";
 app.append(redoer);
+const thin = document.createElement("button");
+thin.innerHTML = "thin";
+app.append(thin);
+const thick = document.createElement("button");
+thick.innerHTML = "thick";
+app.append(thick);
 
 clear.onclick = () => {
   clearCanvas(ctx);
@@ -126,17 +135,24 @@ undoer.onclick = () => {
 redoer.onclick = () => {
   redo();
 };
+thin.onclick = () => {
+  strokeWidth = 1;
+};
+thick.onclick = () => {
+  strokeWidth = 5;
+};
 
 function drawLine(
   context: CanvasRenderingContext2D,
   x1: number,
   y1: number,
   x2: number,
-  y2: number
+  y2: number,
+  lineWidth: number
 ) {
   context.beginPath();
   context.strokeStyle = "black";
-  context.lineWidth = 1;
+  context.lineWidth = lineWidth;
   context.moveTo(x1, y1);
   context.lineTo(x2, y2);
   context.stroke();
