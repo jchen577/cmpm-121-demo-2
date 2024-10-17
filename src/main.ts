@@ -1,5 +1,56 @@
 import "./style.css";
 
+interface displayable {
+  display(context: CanvasRenderingContext2D): void;
+}
+
+class markerLines {
+  holder: number[][] = [];
+  holder2: number[][][] = [];
+  constructor() {}
+  drag(x: number, y: number, x2: number, y2: number): void {
+    this.holder.push([x, y, x2, y2]);
+  }
+  display(context: CanvasRenderingContext2D) {
+    if (!isDrawing) {
+      context.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < displayCommand.holder2.length; i++) {
+        for (let j = 0; j < displayCommand.holder2[i].length; j++) {
+          drawLine(
+            ctx,
+            displayCommand.holder2[i][j][0],
+            displayCommand.holder2[i][j][1],
+            displayCommand.holder2[i][j][2],
+            displayCommand.holder2[i][j][3]
+          );
+        }
+      }
+    } else {
+      context.fillRect(0, 0, 256, 256);
+      for (let k = 0; k < cursorCommand.holder.length; k++) {
+        drawLine(
+          ctx,
+          cursorCommand.holder[k][0],
+          cursorCommand.holder[k][1],
+          cursorCommand.holder[k][2],
+          cursorCommand.holder[k][3]
+        );
+      }
+      for (let i = 0; i < displayCommand.holder2.length; i++) {
+        for (let j = 0; j < displayCommand.holder2[i].length; j++) {
+          drawLine(
+            context,
+            displayCommand.holder2[i][j][0],
+            displayCommand.holder2[i][j][1],
+            displayCommand.holder2[i][j][2],
+            displayCommand.holder2[i][j][3]
+          );
+        }
+      }
+    }
+  }
+}
+
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
 const appTitle = document.createElement("h1");
@@ -16,48 +67,19 @@ ctx.fillRect(10, 10, 256, 256);
 let x = 0;
 let y = 0;
 let isDrawing: boolean = false;
-let points: number[][][] = [];
-let holder: number[][] = [];
-let undoPoints: number[][][] = [];
 const drawChangeEvent = new Event("drawChange");
+const displayCommand: markerLines = new markerLines();
+const cursorCommand: markerLines = new markerLines();
+const redoCommand: markerLines = new markerLines();
 canvas?.addEventListener(
   "drawChange",
   () => {
-    if (!isDrawing) {
-      ctx.fillRect(0, 0, 256, 256);
-      for (let i = 0; i < points.length; i++) {
-        for (let j = 0; j < points[i].length; j++) {
-          drawLine(
-            ctx,
-            points[i][j][0],
-            points[i][j][1],
-            points[i][j][2],
-            points[i][j][3]
-          );
-        }
-      }
-    } else {
-      ctx.fillRect(0, 0, 256, 256);
-      for (let k = 0; k < holder.length; k++) {
-        drawLine(ctx, holder[k][0], holder[k][1], holder[k][2], holder[k][3]);
-      }
-      for (let i = 0; i < points.length; i++) {
-        for (let j = 0; j < points[i].length; j++) {
-          drawLine(
-            ctx,
-            points[i][j][0],
-            points[i][j][1],
-            points[i][j][2],
-            points[i][j][3]
-          );
-        }
-      }
-    }
+    displayCommand.display(ctx);
   },
   false
 );
 canvas?.addEventListener("mousedown", (pos: MouseEvent) => {
-  undoPoints = [];
+  redoCommand.holder = [];
   x = pos.offsetX;
   y = pos.offsetY;
   isDrawing = true;
@@ -65,7 +87,8 @@ canvas?.addEventListener("mousedown", (pos: MouseEvent) => {
 
 canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
   if (isDrawing) {
-    holder.push([x, y, pos.offsetX, pos.offsetY]);
+    //holder.push([x, y, pos.offsetX, pos.offsetY]);
+    cursorCommand.drag(x, y, pos.offsetX, pos.offsetY);
     canvas.dispatchEvent(drawChangeEvent);
     x = pos.offsetX;
     y = pos.offsetY;
@@ -74,13 +97,13 @@ canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
 
 canvas?.addEventListener("mouseup", (pos: MouseEvent) => {
   if (isDrawing) {
-    holder.push([x, y, pos.offsetX, pos.offsetY]);
-    points.push(holder);
+    cursorCommand.drag(x, y, pos.offsetX, pos.offsetY);
+    displayCommand.holder2.push(cursorCommand.holder);
     isDrawing = false;
     canvas.dispatchEvent(drawChangeEvent);
     x = 0;
     y = 0;
-    holder = [];
+    cursorCommand.holder = [];
   }
 });
 
@@ -121,21 +144,21 @@ function drawLine(
 }
 function clearCanvas(context: CanvasRenderingContext2D) {
   context.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < points.length; i++) {
-    undoPoints.push(points[i]);
+  for (let i = 0; i < displayCommand.holder2.length; i++) {
+    redoCommand.holder2.push(displayCommand.holder2[i]);
   }
-  points = [];
+  displayCommand.holder2 = [];
 }
 function undo() {
-  if (points.length > 0) {
-    undoPoints.push(points.pop());
+  if (displayCommand.holder2.length > 0) {
+    redoCommand.holder2.push(displayCommand.holder2.pop());
     canvas?.dispatchEvent(drawChangeEvent);
   }
 }
 
 function redo() {
-  if (undoPoints.length > 0) {
-    points.push(undoPoints.pop());
+  if (redoCommand.holder2.length > 0) {
+    displayCommand.holder2.push(redoCommand.holder2.pop());
     canvas?.dispatchEvent(drawChangeEvent);
   }
 }
