@@ -33,6 +33,7 @@ canvas {
   border: solid 10px;
   border-radius: 1px;
   box-shadow: 5px 5px;
+  cursor: none;
 }
 h1 {
   font-size: 3.2em;

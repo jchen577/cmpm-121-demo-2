@@ -10,7 +10,27 @@ class cursor implements displayable {
   display(context: CanvasRenderingContext2D) {
     context.font = "32px monospace";
     context.fillStyle = "black";
-    context.fillText("+", this.x - 8, this.y + 10);
+    if (currText == "") {
+      context.fillText("+", this.x - 8, this.y + 10);
+    } else {
+      context.fillText(currText, this.x, this.y);
+    }
+    context.fillStyle = "white";
+  }
+}
+class stickers implements displayable {
+  holder: string[] = [];
+  holder2: number[][] = [];
+  drag(x: number, y: number): void {
+    this.holder.push(currText);
+    this.holder2.push([x, y]);
+  }
+  display(context: CanvasRenderingContext2D) {
+    context.font = "32px monospace";
+    context.fillStyle = "black";
+    for (let i = 0; i < this.holder2.length; i++) {
+      context.fillText(this.holder[i], this.holder2[i][0], this.holder2[i][1]);
+    }
     context.fillStyle = "white";
   }
 }
@@ -79,16 +99,20 @@ ctx.fillRect(10, 10, 256, 256);
 let x = 0;
 let y = 0;
 let isDrawing: boolean = false;
+let currText: string = "";
+let drawEmote = false;
 const drawChangeEvent = new Event("drawChange");
 const toolChangeEvent = new Event("toolMoved");
 const displayCommand: markerLines = new markerLines();
 const cursorCommand: cursor = new cursor();
 const redoCommand: markerLines = new markerLines();
+const stickersCommand: stickers = new stickers();
 canvas?.addEventListener(
   "drawChange",
   () => {
     displayCommand.display(ctx);
     cursorCommand.display(ctx);
+    stickersCommand.display(ctx);
   },
   false
 );
@@ -97,6 +121,7 @@ canvas?.addEventListener(
   () => {
     displayCommand.display(ctx);
     cursorCommand.display(ctx);
+    stickersCommand.display(ctx);
   },
   false
 );
@@ -113,7 +138,12 @@ canvas?.addEventListener("mousedown", (pos: MouseEvent) => {
 canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
   if (isDrawing) {
     //holder.push([x, y, pos.offsetX, pos.offsetY]);
-    displayCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
+    if (!drawEmote) {
+      displayCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
+    } else {
+      stickersCommand.drag(x, y);
+      stickersCommand.holder.push(currText);
+    }
     x = pos.offsetX;
     y = pos.offsetY;
     canvas.dispatchEvent(drawChangeEvent);
@@ -125,8 +155,13 @@ canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
 
 canvas?.addEventListener("mouseup", (pos: MouseEvent) => {
   if (isDrawing) {
-    displayCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
-    displayCommand.holder2.push(displayCommand.holder);
+    if (!drawEmote) {
+      displayCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
+      displayCommand.holder2.push(displayCommand.holder);
+    } else {
+      stickersCommand.drag(x, y);
+      stickersCommand.holder.push(currText);
+    }
     isDrawing = false;
     x = 0;
     y = 0;
@@ -138,11 +173,13 @@ canvas?.addEventListener("mouseup", (pos: MouseEvent) => {
   canvas.dispatchEvent(toolChangeEvent);
 });
 canvas?.addEventListener("mouseenter", (pos: MouseEvent) => {
+  canvas.style.cursor = "none";
   cursorCommand.x = pos.offsetX;
   cursorCommand.y = pos.offsetY;
   canvas.dispatchEvent(toolChangeEvent);
 });
 canvas?.addEventListener("mouseout", (pos: MouseEvent) => {
+  //canvas.style.cursor = "default";
   cursorCommand.x = pos.offsetX;
   cursorCommand.y = pos.offsetY;
   canvas.dispatchEvent(toolChangeEvent);
@@ -163,6 +200,15 @@ app.append(thin);
 const thick = document.createElement("button");
 thick.innerHTML = "thick";
 app.append(thick);
+const emote1 = document.createElement("button");
+emote1.innerHTML = "💀";
+app.append(emote1);
+const emote2 = document.createElement("button");
+emote2.innerHTML = "👊";
+app.append(emote2);
+const emote3 = document.createElement("button");
+emote3.innerHTML = "🧠";
+app.append(emote3);
 
 clear.onclick = () => {
   clearCanvas(ctx);
@@ -174,12 +220,26 @@ redoer.onclick = () => {
   redo();
 };
 thin.onclick = () => {
+  drawEmote = false;
   strokeWidth = 1;
 };
+thin.addEventListener("mouseenter", () => {});
 thick.onclick = () => {
+  drawEmote = false;
   strokeWidth = 5;
 };
-
+emote1.onclick = () => {
+  drawEmote = true;
+  currText = "💀";
+};
+emote2.onclick = () => {
+  drawEmote = true;
+  currText = "👊";
+};
+emote3.onclick = () => {
+  drawEmote = true;
+  currText = "🧠";
+};
 function drawLine(
   context: CanvasRenderingContext2D,
   x1: number,
@@ -188,9 +248,9 @@ function drawLine(
   y2: number,
   lineWidth: number
 ) {
-  context.beginPath();
   context.strokeStyle = "black";
   context.lineWidth = lineWidth;
+  context.beginPath();
   context.moveTo(x1, y1);
   context.lineTo(x2, y2);
   context.stroke();
