@@ -4,7 +4,17 @@ interface displayable {
   display(context: CanvasRenderingContext2D): void;
 }
 let strokeWidth: number = 1;
-class markerLines {
+class cursor implements displayable {
+  x: number = 0;
+  y: number = 0;
+  display(context: CanvasRenderingContext2D) {
+    context.font = "32px monospace";
+    context.fillStyle = "black";
+    context.fillText("+", this.x - 8, this.y + 10);
+    context.fillStyle = "white";
+  }
+}
+class markerLines implements displayable {
   holder: number[][] = [];
   holder2: number[][][] = [];
   constructor() {}
@@ -12,41 +22,40 @@ class markerLines {
     this.holder.push([x, y, x2, y2, lineWidth]);
   }
   display(context: CanvasRenderingContext2D) {
+    context.fillRect(0, 0, 256, 256);
     if (!isDrawing) {
-      context.fillRect(0, 0, 256, 256);
-      for (let i = 0; i < displayCommand.holder2.length; i++) {
-        for (let j = 0; j < displayCommand.holder2[i].length; j++) {
+      for (let i = 0; i < this.holder2.length; i++) {
+        for (let j = 0; j < this.holder2[i].length; j++) {
           drawLine(
             ctx,
-            displayCommand.holder2[i][j][0],
-            displayCommand.holder2[i][j][1],
-            displayCommand.holder2[i][j][2],
-            displayCommand.holder2[i][j][3],
-            displayCommand.holder2[i][j][4]
+            this.holder2[i][j][0],
+            this.holder2[i][j][1],
+            this.holder2[i][j][2],
+            this.holder2[i][j][3],
+            this.holder2[i][j][4]
           );
         }
       }
     } else {
-      context.fillRect(0, 0, 256, 256);
-      for (let k = 0; k < cursorCommand.holder.length; k++) {
+      for (let k = 0; k < this.holder.length; k++) {
         drawLine(
           ctx,
-          cursorCommand.holder[k][0],
-          cursorCommand.holder[k][1],
-          cursorCommand.holder[k][2],
-          cursorCommand.holder[k][3],
-          cursorCommand.holder[k][4]
+          this.holder[k][0],
+          this.holder[k][1],
+          this.holder[k][2],
+          this.holder[k][3],
+          this.holder[k][4]
         );
       }
-      for (let i = 0; i < displayCommand.holder2.length; i++) {
-        for (let j = 0; j < displayCommand.holder2[i].length; j++) {
+      for (let i = 0; i < this.holder2.length; i++) {
+        for (let j = 0; j < this.holder2[i].length; j++) {
           drawLine(
             context,
-            displayCommand.holder2[i][j][0],
-            displayCommand.holder2[i][j][1],
-            displayCommand.holder2[i][j][2],
-            displayCommand.holder2[i][j][3],
-            displayCommand.holder2[i][j][4]
+            this.holder2[i][j][0],
+            this.holder2[i][j][1],
+            this.holder2[i][j][2],
+            this.holder2[i][j][3],
+            this.holder2[i][j][4]
           );
         }
       }
@@ -71,13 +80,23 @@ let x = 0;
 let y = 0;
 let isDrawing: boolean = false;
 const drawChangeEvent = new Event("drawChange");
+const toolChangeEvent = new Event("toolMoved");
 const displayCommand: markerLines = new markerLines();
-const cursorCommand: markerLines = new markerLines();
+const cursorCommand: cursor = new cursor();
 const redoCommand: markerLines = new markerLines();
 canvas?.addEventListener(
   "drawChange",
   () => {
     displayCommand.display(ctx);
+    cursorCommand.display(ctx);
+  },
+  false
+);
+canvas?.addEventListener(
+  "toolMoved",
+  () => {
+    displayCommand.display(ctx);
+    cursorCommand.display(ctx);
   },
   false
 );
@@ -86,28 +105,47 @@ canvas?.addEventListener("mousedown", (pos: MouseEvent) => {
   x = pos.offsetX;
   y = pos.offsetY;
   isDrawing = true;
+  cursorCommand.x = pos.offsetX;
+  cursorCommand.y = pos.offsetY;
+  canvas.dispatchEvent(toolChangeEvent);
 });
 
 canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
   if (isDrawing) {
     //holder.push([x, y, pos.offsetX, pos.offsetY]);
-    cursorCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
-    canvas.dispatchEvent(drawChangeEvent);
+    displayCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
     x = pos.offsetX;
     y = pos.offsetY;
+    canvas.dispatchEvent(drawChangeEvent);
   }
+  cursorCommand.x = pos.offsetX;
+  cursorCommand.y = pos.offsetY;
+  canvas.dispatchEvent(toolChangeEvent);
 });
 
 canvas?.addEventListener("mouseup", (pos: MouseEvent) => {
   if (isDrawing) {
-    cursorCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
-    displayCommand.holder2.push(cursorCommand.holder);
+    displayCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
+    displayCommand.holder2.push(displayCommand.holder);
     isDrawing = false;
-    canvas.dispatchEvent(drawChangeEvent);
     x = 0;
     y = 0;
-    cursorCommand.holder = [];
+    displayCommand.holder = [];
+    canvas.dispatchEvent(drawChangeEvent);
   }
+  cursorCommand.x = pos.offsetX;
+  cursorCommand.y = pos.offsetY;
+  canvas.dispatchEvent(toolChangeEvent);
+});
+canvas?.addEventListener("mouseenter", (pos: MouseEvent) => {
+  cursorCommand.x = pos.offsetX;
+  cursorCommand.y = pos.offsetY;
+  canvas.dispatchEvent(toolChangeEvent);
+});
+canvas?.addEventListener("mouseout", (pos: MouseEvent) => {
+  cursorCommand.x = pos.offsetX;
+  cursorCommand.y = pos.offsetY;
+  canvas.dispatchEvent(toolChangeEvent);
 });
 
 const clear = document.createElement("button");
