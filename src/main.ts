@@ -10,20 +10,22 @@ class cursor implements displayable {
   display(context: CanvasRenderingContext2D) {
     context.font = "32px monospace";
     context.fillStyle = "black";
-    if (currText == "") {
-      context.fillText("+", this.x - 8, this.y + 10);
-    } else {
-      context.fillText(currText, this.x, this.y);
-    }
+    context.fillText(currText, this.x, this.y);
     context.fillStyle = "white";
   }
 }
 class stickers implements displayable {
   holder: string[] = [];
   holder2: number[][] = [];
+  holder3: number[][] = [];
+  holder4: string[] = [];
   drag(x: number, y: number): void {
     this.holder.push(currText);
     this.holder2.push([x, y]);
+  }
+  readd(pos: number[], str: string) {
+    this.holder4.push(str);
+    this.holder3.push(pos);
   }
   display(context: CanvasRenderingContext2D) {
     context.font = "32px monospace";
@@ -99,7 +101,7 @@ ctx.fillRect(10, 10, 256, 256);
 let x = 0;
 let y = 0;
 let isDrawing: boolean = false;
-let currText: string = "";
+let currText: string = "+";
 let drawEmote = false;
 const drawChangeEvent = new Event("drawChange");
 const toolChangeEvent = new Event("toolMoved");
@@ -130,6 +132,9 @@ canvas?.addEventListener("mousedown", (pos: MouseEvent) => {
   x = pos.offsetX;
   y = pos.offsetY;
   isDrawing = true;
+  if (drawEmote) {
+    stickersCommand.drag(x, y);
+  }
   cursorCommand.x = pos.offsetX;
   cursorCommand.y = pos.offsetY;
   canvas.dispatchEvent(toolChangeEvent);
@@ -140,9 +145,6 @@ canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
     //holder.push([x, y, pos.offsetX, pos.offsetY]);
     if (!drawEmote) {
       displayCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
-    } else {
-      stickersCommand.drag(x, y);
-      stickersCommand.holder.push(currText);
     }
     x = pos.offsetX;
     y = pos.offsetY;
@@ -158,9 +160,6 @@ canvas?.addEventListener("mouseup", (pos: MouseEvent) => {
     if (!drawEmote) {
       displayCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
       displayCommand.holder2.push(displayCommand.holder);
-    } else {
-      stickersCommand.drag(x, y);
-      stickersCommand.holder.push(currText);
     }
     isDrawing = false;
     x = 0;
@@ -185,31 +184,15 @@ canvas?.addEventListener("mouseout", (pos: MouseEvent) => {
   canvas.dispatchEvent(toolChangeEvent);
 });
 
-const clear = document.createElement("button");
-clear.innerHTML = "clear";
-app.append(clear);
-const undoer = document.createElement("button");
-undoer.innerHTML = "undo";
-app.append(undoer);
-const redoer = document.createElement("button");
-redoer.innerHTML = "redo";
-app.append(redoer);
-const thin = document.createElement("button");
-thin.innerHTML = "thin";
-app.append(thin);
-const thick = document.createElement("button");
-thick.innerHTML = "thick";
-app.append(thick);
-const emote1 = document.createElement("button");
-emote1.innerHTML = "💀";
-app.append(emote1);
-const emote2 = document.createElement("button");
-emote2.innerHTML = "👊";
-app.append(emote2);
-const emote3 = document.createElement("button");
-emote3.innerHTML = "🧠";
-app.append(emote3);
-
+const clear = createNewButton("clear");
+const undoer = createNewButton("undo");
+const redoer = createNewButton("redo");
+const thin = createNewButton("thin");
+const thick = createNewButton("thick");
+createNewSticker("🧠");
+createNewSticker("👊");
+createNewSticker("💀");
+const custom = createNewButton("custom sticker");
 clear.onclick = () => {
   clearCanvas(ctx);
 };
@@ -222,23 +205,19 @@ redoer.onclick = () => {
 thin.onclick = () => {
   drawEmote = false;
   strokeWidth = 1;
+  currText = "+";
 };
 thin.addEventListener("mouseenter", () => {});
 thick.onclick = () => {
   drawEmote = false;
   strokeWidth = 5;
+  currText = "+";
 };
-emote1.onclick = () => {
-  drawEmote = true;
-  currText = "💀";
-};
-emote2.onclick = () => {
-  drawEmote = true;
-  currText = "👊";
-};
-emote3.onclick = () => {
-  drawEmote = true;
-  currText = "🧠";
+custom.onclick = () => {
+  let stick: string = prompt("Please Input A Sticker: ", "");
+  if (stick) {
+    createNewSticker(stick);
+  }
 };
 function drawLine(
   context: CanvasRenderingContext2D,
@@ -262,17 +241,51 @@ function clearCanvas(context: CanvasRenderingContext2D) {
     redoCommand.holder2.push(displayCommand.holder2[i]);
   }
   displayCommand.holder2 = [];
+  stickersCommand.holder = [];
+  stickersCommand.holder2 = [];
 }
 function undo() {
-  if (displayCommand.holder2.length > 0) {
-    redoCommand.holder2.push(displayCommand.holder2.pop());
-    canvas?.dispatchEvent(drawChangeEvent);
+  if (drawEmote) {
+    if (stickersCommand.holder.length > 0) {
+      stickersCommand.holder3.push(stickersCommand.holder2.pop());
+      stickersCommand.holder4.push(stickersCommand.holder.pop());
+      canvas?.dispatchEvent(toolChangeEvent);
+    }
+  } else {
+    if (displayCommand.holder2.length > 0) {
+      redoCommand.holder2.push(displayCommand.holder2.pop());
+      canvas?.dispatchEvent(drawChangeEvent);
+    }
   }
 }
 
+function createNewSticker(stick: string) {
+  const newStick = document.createElement("button");
+  newStick.innerHTML = stick;
+  app.append(newStick);
+  newStick.onclick = () => {
+    drawEmote = true;
+    currText = stick;
+  };
+}
+function createNewButton(name: string) {
+  const newButt = document.createElement("button");
+  newButt.innerHTML = name;
+  app.append(newButt);
+  return newButt;
+}
+
 function redo() {
-  if (redoCommand.holder2.length > 0) {
-    displayCommand.holder2.push(redoCommand.holder2.pop());
-    canvas?.dispatchEvent(drawChangeEvent);
+  if (drawEmote) {
+    if (stickersCommand.holder3.length > 0) {
+      stickersCommand.holder2.push(stickersCommand.holder3.pop());
+      stickersCommand.holder.push(stickersCommand.holder4.pop());
+      canvas?.dispatchEvent(toolChangeEvent);
+    }
+  } else {
+    if (redoCommand.holder2.length > 0) {
+      displayCommand.holder2.push(redoCommand.holder2.pop());
+      canvas?.dispatchEvent(drawChangeEvent);
+    }
   }
 }
