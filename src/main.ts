@@ -41,6 +41,8 @@ class stickers implements displayable {
 class markerLines implements displayable {
   holder: number[][] = [];
   holder2: number[][][] = [];
+  holder3: string[] = [];
+  holder4: string = [];
   constructor() {}
   drag(x: number, y: number, x2: number, y2: number, lineWidth: number): void {
     this.holder.push([x, y, x2, y2, lineWidth]);
@@ -56,7 +58,8 @@ class markerLines implements displayable {
             this.holder2[i][j][1],
             this.holder2[i][j][2],
             this.holder2[i][j][3],
-            this.holder2[i][j][4]
+            this.holder2[i][j][4],
+            this.holder3[i]
           );
         }
       }
@@ -68,7 +71,8 @@ class markerLines implements displayable {
           this.holder[k][1],
           this.holder[k][2],
           this.holder[k][3],
-          this.holder[k][4]
+          this.holder[k][4],
+          this.holder4[0]
         );
       }
       for (let i = 0; i < this.holder2.length; i++) {
@@ -79,7 +83,8 @@ class markerLines implements displayable {
             this.holder2[i][j][1],
             this.holder2[i][j][2],
             this.holder2[i][j][3],
-            this.holder2[i][j][4]
+            this.holder2[i][j][4],
+            this.holder3[i]
           );
         }
       }
@@ -147,6 +152,7 @@ canvas?.addEventListener("mousemove", (pos: MouseEvent) => {
   if (isDrawing) {
     //holder.push([x, y, pos.offsetX, pos.offsetY]);
     if (!drawEmote) {
+      displayCommand.holder4 = ctx.strokeStyle;
       displayCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
     }
     x = pos.offsetX;
@@ -163,6 +169,7 @@ canvas?.addEventListener("mouseup", (pos: MouseEvent) => {
     if (!drawEmote) {
       displayCommand.drag(x, y, pos.offsetX, pos.offsetY, strokeWidth);
       displayCommand.holder2.push(displayCommand.holder);
+      displayCommand.holder3.push(displayCommand.holder4);
     }
     isDrawing = false;
     x = 0;
@@ -192,6 +199,7 @@ const undoer = createNewButton("undo");
 const redoer = createNewButton("redo");
 const thin = createNewButton("thin");
 const thick = createNewButton("thick");
+const changeColor = createNewButton("change color");
 createNewSticker("🧠");
 createNewSticker("👊");
 createNewSticker("💀");
@@ -208,7 +216,6 @@ exportor.onclick = () => {
   displayCommand.display(ctx2);
   stickersCommand.display(ctx2);
   anchor.href = newCanv.toDataURL("image/png");
-  console.log(anchor.href);
   anchor.download = "sketchpad.png";
   anchor.click();
   newCanv = null;
@@ -216,6 +223,14 @@ exportor.onclick = () => {
   ctx2.canvas.height = 256;
   ctx2 = null;
   newCanv = null;
+};
+changeColor.onclick = () => {
+  const color: string = prompt("What color would you like?: ", "");
+  const before = ctx.strokeStyle;
+  ctx.strokeStyle = color;
+  if (ctx.strokeStyle == before) {
+    console.log("Invalid Color");
+  }
 };
 clear.onclick = () => {
   clearCanvas(ctx);
@@ -249,15 +264,18 @@ function drawLine(
   y1: number,
   x2: number,
   y2: number,
-  lineWidth: number
+  lineWidth: number,
+  color: string
 ) {
-  context.strokeStyle = "black";
   context.lineWidth = lineWidth;
+  const prevColor = context.strokeStyle;
+  context.strokeStyle = color;
   context.beginPath();
   context.moveTo(x1, y1);
   context.lineTo(x2, y2);
   context.stroke();
   context.closePath();
+  context.strokeStyle = prevColor;
 }
 function clearCanvas(context: CanvasRenderingContext2D) {
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
@@ -278,6 +296,7 @@ function undo() {
   } else {
     if (displayCommand.holder2.length > 0) {
       redoCommand.holder2.push(displayCommand.holder2.pop());
+      redoCommand.holder3.push(displayCommand.holder3.pop());
       canvas?.dispatchEvent(drawChangeEvent);
     }
   }
@@ -309,6 +328,7 @@ function redo() {
   } else {
     if (redoCommand.holder2.length > 0) {
       displayCommand.holder2.push(redoCommand.holder2.pop());
+      displayCommand.holder3.push(redoCommand.holder3.pop());
       canvas?.dispatchEvent(drawChangeEvent);
     }
   }
