@@ -8,9 +8,13 @@ class cursor implements displayable {
   x: number = 0;
   y: number = 0;
   display(context: CanvasRenderingContext2D) {
-    context.font = "32px monospace";
     context.fillStyle = "black";
-    context.fillText(currText, this.x, this.y);
+    if (drawEmote) {
+      context.globalAlpha = 0.7;
+      context.fillText(currText, this.x, this.y);
+    } else {
+      context.fillText(currText, this.x - 10, this.y + 6);
+    }
     context.fillStyle = "white";
   }
 }
@@ -28,7 +32,7 @@ class stickers implements displayable {
     this.holder3.push(pos);
   }
   display(context: CanvasRenderingContext2D) {
-    context.font = "32px monospace";
+    context.globalAlpha = 1;
     for (let i = 0; i < this.holder2.length; i++) {
       context.fillText(this.holder[i], this.holder2[i][0], this.holder2[i][1]);
     }
@@ -91,11 +95,12 @@ app.append(appTitle);
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-canvas.width = 256;
-canvas.height = 256;
+ctx.canvas.width = 256;
+ctx.canvas.height = 256;
 
 ctx.fillStyle = "white";
-ctx.fillRect(10, 10, 256, 256);
+ctx.font = "32px monospace";
+ctx.fillRect(10, 10, ctx.canvas.width, ctx.canvas.height);
 let x = 0;
 let y = 0;
 let isDrawing: boolean = false;
