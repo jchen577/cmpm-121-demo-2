@@ -42,7 +42,7 @@ class markerLines implements displayable {
   holder: number[][] = [];
   holder2: number[][][] = [];
   holder3: string[] = [];
-  holder4: string = [];
+  holder4: string = "";
   constructor() {}
   drag(x: number, y: number, x2: number, y2: number, lineWidth: number): void {
     this.holder.push([x, y, x2, y2, lineWidth]);
