@@ -29,11 +29,9 @@ class stickers implements displayable {
   }
   display(context: CanvasRenderingContext2D) {
     context.font = "32px monospace";
-    context.fillStyle = "black";
     for (let i = 0; i < this.holder2.length; i++) {
       context.fillText(this.holder[i], this.holder2[i][0], this.holder2[i][1]);
     }
-    context.fillStyle = "white";
   }
 }
 class markerLines implements displayable {
@@ -44,12 +42,12 @@ class markerLines implements displayable {
     this.holder.push([x, y, x2, y2, lineWidth]);
   }
   display(context: CanvasRenderingContext2D) {
-    context.fillRect(0, 0, 256, 256);
+    context.fillRect(0, 0, context.canvas.width, context.canvas.height);
     if (!isDrawing) {
       for (let i = 0; i < this.holder2.length; i++) {
         for (let j = 0; j < this.holder2[i].length; j++) {
           drawLine(
-            ctx,
+            context,
             this.holder2[i][j][0],
             this.holder2[i][j][1],
             this.holder2[i][j][2],
@@ -193,6 +191,27 @@ createNewSticker("🧠");
 createNewSticker("👊");
 createNewSticker("💀");
 const custom = createNewButton("custom sticker");
+const exportor = createNewButton("export");
+exportor.onclick = () => {
+  const anchor = document.createElement("a");
+  let newCanv = document.getElementById("canvas");
+  let ctx2 = newCanv.getContext("2d");
+  ctx2.canvas.width = 1024;
+  ctx2.canvas.height = 1024;
+  ctx2.scale(4, 4);
+  ctx2.fillStyle = "white";
+  displayCommand.display(ctx2);
+  stickersCommand.display(ctx2);
+  anchor.href = newCanv.toDataURL("image/png");
+  console.log(anchor.href);
+  anchor.download = "sketchpad.png";
+  anchor.click();
+  newCanv = null;
+  ctx2.canvas.width = 256;
+  ctx2.canvas.height = 256;
+  ctx2 = null;
+  newCanv = null;
+};
 clear.onclick = () => {
   clearCanvas(ctx);
 };
@@ -236,7 +255,7 @@ function drawLine(
   context.closePath();
 }
 function clearCanvas(context: CanvasRenderingContext2D) {
-  context.fillRect(0, 0, 256, 256);
+  context.fillRect(0, 0, context.canvas.width, context.canvas.height);
   for (let i = 0; i < displayCommand.holder2.length; i++) {
     redoCommand.holder2.push(displayCommand.holder2[i]);
   }
