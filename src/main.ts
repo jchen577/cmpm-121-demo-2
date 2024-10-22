@@ -282,6 +282,7 @@ function clearCanvas(context: CanvasRenderingContext2D) {
   for (let i = 0; i < displayCommand.holder2.length; i++) {
     redoCommand.holder2.push(displayCommand.holder2[i]);
   }
+  displayCommand.holder3 = [];
   displayCommand.holder2 = [];
   stickersCommand.holder = [];
   stickersCommand.holder2 = [];
