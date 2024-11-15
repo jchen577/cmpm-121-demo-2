@@ -93,6 +93,10 @@ class markerLines implements displayable {
 }
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
+const ActionButtonContainer = document.querySelector<HTMLDivElement>("#actionButtonContainer")!;
+const DrawButtonContainer = document.querySelector<HTMLDivElement>("#drawButtonContainer")!;
+const StickerContainer = document.querySelector<HTMLDivElement>("#stickerContainer")!;
+
 
 const appTitle = document.createElement("h1");
 appTitle.innerHTML = "DRAW!";
@@ -205,6 +209,17 @@ createNewSticker("👊");
 createNewSticker("💀");
 const custom = createNewButton("custom sticker");
 const exportor = createNewButton("export");
+
+ActionButtonContainer.appendChild(clear);
+ActionButtonContainer.appendChild(undoer);
+ActionButtonContainer.appendChild(redoer);
+ActionButtonContainer.appendChild(exportor);
+
+DrawButtonContainer.appendChild(thin);
+DrawButtonContainer.appendChild(thick);
+DrawButtonContainer.appendChild(changeColor);
+DrawButtonContainer.appendChild(custom);
+
 exportor.onclick = () => {
   const anchor = document.createElement("a");
   let newCanv = document.getElementById("canvas");
@@ -306,7 +321,7 @@ function undo() {
 function createNewSticker(stick: string) {
   const newStick = document.createElement("button");
   newStick.innerHTML = stick;
-  app.append(newStick);
+  StickerContainer.appendChild(newStick);
   newStick.onclick = () => {
     drawEmote = true;
     currText = stick;
